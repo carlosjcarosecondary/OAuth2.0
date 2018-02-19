@@ -59,11 +59,13 @@ def gconnect():
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort
     if result.get('error') is not None:
+      print('Access Token ERROR!')
       response = make_response(json.dumps(result.get('error')), 50)
       response.headers['Content-Type'] = 'application/json'
     # Verify that the access token is used for the intended user
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
+      print('Access Token is for the WRONG USER!!')
       response = make_response(
         json.dumps("Token's user ID does not match given user ID"), 401)
       print "Token's client ID does not match app's"
