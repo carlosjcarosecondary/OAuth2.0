@@ -38,22 +38,21 @@ def showLogin():
 
 @app.route('/gconnect',methods=['POST'])
 def gconnect():
-  if request.args.get('state') != login_session['state']:
-    response = make_response(json.dumps('Invalid state token'), 401)
-    response.headers['Content-Type']='application/json'
-    return response
-  code = request.data
-  try:
-    # Upgrade the authorization code into a credentials object
-    oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
-    oauth_flow.redirect_uri = 'postmessage'
-    credentials = oauth_flow.step2_exchange(code)
+    if request.args.get('state') != login_session['state']:
+      response = make_response(json.dumps('Invalid state token'), 401)
+      response.headers['Content-Type']='application/json'
+      return response
+    code = request.data
+    try:
+        # Upgrade the authorization code into a credentials object
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
+        oauth_flow.redirect_uri = 'postmessage'
+        credentials = oauth_flow.step2_exchange(code)
 
-  except FlowExchangeError:
-    print('BREAKING POINT!!!!')
-    response = make_response(json.dumps('Failed to upgrade the authorization code'), 401)
-    response.headers['Content-Type'] = 'application/json'
-    return response
+    except FlowExchangeError:
+        response = make_response(json.dumps('Failed to upgrade the authorization code'), 401)
+        response.headers['Content-Type'] = 'application/json'
+        return response
 
     # Check that the access token is valid
     access_token = credentials.access_token
@@ -62,23 +61,23 @@ def gconnect():
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort
     if result.get('error') is not None:
-      response = make_response(json.dumps(result.get('error')), 50)
-      response.headers['Content-Type'] = 'application/json'
+        response = make_response(json.dumps(result.get('error')), 50)
+        response.headers['Content-Type'] = 'application/json'
     # Verify that the access token is used for the intended user
     gplus_id = credentials.id_token['sub']
     if result['user_id'] != gplus_id:
-      response = make_response(
+        response = make_response(
         json.dumps("Token's user ID does not match given user ID"), 401)
-      print "Token's client ID does not match app's"
-      response.headers['Content-Type'] = 'application/json'
-      return response
+        print "Token's client ID does not match app's"
+        response.headers['Content-Type'] = 'application/json'
+        return response
     # Check to see if user is already logged in
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
     
     if stored_credentials is not None and gplus_id == stored_gplus_id:
-      response = make_response(json.dumps('Current user is already connected'), 200)
-      response.headers['Content-Type'] = 'application/json'
+        response = make_response(json.dumps('Current user is already connected'), 200)
+        response.headers['Content-Type'] = 'application/json'
 
     # Store the access token in the session for later use
     login_session['credentials'] = credentials
@@ -128,8 +127,8 @@ def restaurantsJSON():
 @app.route('/')
 @app.route('/restaurant/')
 def showRestaurants():
-  restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
-  return render_template('restaurants.html', restaurants = restaurants)
+    restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
+    return render_template('restaurants.html', restaurants = restaurants)
 
 #Create a new restaurant
 @app.route('/restaurant/new/', methods=['GET','POST'])
