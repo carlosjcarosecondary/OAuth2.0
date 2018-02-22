@@ -13,13 +13,13 @@ class User(Base):
   email = Column(String(30), nullable=False)
   picture = Column(String(250))
 
-    @property
-    def serialize(self):
-       """Return object data in easily serializeable format"""
-       return {
-           'name'         : self.name,
-           'id'           : self.id,
-           'email'        : self.email
+  @property
+  def serialize(self):
+      """Return object data in easily serializeable format"""
+      return {
+        'name'         : self.name,
+        'id'           : self.id,
+        'email'        : self.email
        }
 
 class Restaurant(Base):
@@ -66,7 +66,7 @@ class MenuItem(Base):
 
 
 
-engine = create_engine('sqlite:///restaurantmenu.db')
+engine = create_engine('sqlite:///restaurantmenuwithusers.db')
  
 
 Base.metadata.create_all(engine)
