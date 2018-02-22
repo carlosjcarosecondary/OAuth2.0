@@ -76,6 +76,7 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     # Check to see if user is already logged in
+
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
     
@@ -99,9 +100,6 @@ def gconnect():
     login_session['email'] = data["email"]
 
     # Checking if logged-in user already exist in the DB
-    
-    # rows = session.query(User).count()
-    # print rows
 
     # for x in session.query(User):
     #     xx = session.query(User).filter_by(id = x.id).one()
@@ -110,27 +108,14 @@ def gconnect():
     # rows = session.query(User).count()
     # print rows
 
-    print('++' * 50)
     user_id = getUserID(login_session['email'])
-    print(user_id)
 
-    if user_id:
-        print('LLENO')
-    else:
-        print('VACIO')
+    if not user_id:
         user_id = createUser(login_session)
+
+    print(session.query(User).count())
+        
     login_session['user_id'] = user_id
-    print('++' * 50)
-
-    # rows = session.query(User).count()
-    # print rows
-
-    # for x in session.query(User):
-    #     xx = session.query(User).filter_by(id = x.id).one()
-    #     session.delete(xx)
-    #     session.commit()
-    # rows = session.query(User).count()
-    # print rows
 
     output = ''
     output += '<h1>Welcome, '
@@ -143,7 +128,6 @@ def gconnect():
     print "done!"
     return output
 
-
 # User tools
 def createUser(login_session):
     newUser = User(name = login_session['username'], email = login_session['email'], 
@@ -154,7 +138,7 @@ def createUser(login_session):
     return user.id
 
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(id = user_id).one()
+    user = session.query(User).filter_by(email = login_session['email']).one()
     return user
 
 def getUserID(email):
