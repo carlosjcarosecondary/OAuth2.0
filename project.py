@@ -7,7 +7,7 @@ from database_setup import Base, Restaurant, MenuItem, User
 
 #New imports for authenticity of a session
 from flask import session as login_session
-import random, string
+import random, string, os
 
 # Imports to manage the exchange with Oauth Provider
 from oauth2client.client import flow_from_clientsecrets
@@ -16,6 +16,8 @@ import httplib2
 import json
 from flask import make_response
 import requests
+
+os.system('clear')
 
 CLIENT_ID =json.loads(open('client_secrets.json','r').read())['web']['client_id']
 APPLICATION_NAME = 'Restaurant Menu Application'
@@ -99,23 +101,19 @@ def gconnect():
     login_session['picture'] = data["picture"]
     login_session['email'] = data["email"]
 
-    # Checking if logged-in user already exist in the DB
+    user_id = getUserID(login_session['email'])
+
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+    
+    print('Number of users: %s'%session.query(User).count())
 
     # for x in session.query(User):
     #     xx = session.query(User).filter_by(id = x.id).one()
     #     session.delete(xx)
     #     session.commit()
-    # rows = session.query(User).count()
-    # print rows
-
-    user_id = getUserID(login_session['email'])
-
-    if not user_id:
-        user_id = createUser(login_session)
-
-    print(session.query(User).count())
-        
-    login_session['user_id'] = user_id
+    # print(session.query(User).count())
 
     output = ''
     output += '<h1>Welcome, '
