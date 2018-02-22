@@ -3,7 +3,7 @@ app = Flask(__name__)
 
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Restaurant, MenuItem
+from database_setup import Base, Restaurant, MenuItem, User
 
 #New imports for authenticity of a session
 from flask import session as login_session
@@ -38,13 +38,17 @@ def showLogin():
 
 @app.route('/gconnect',methods=['POST'])
 def gconnect():
+    # Checking if the session is from the user and not from a script
     if request.args.get('state') != login_session['state']:
       response = make_response(json.dumps('Invalid state token'), 401)
       response.headers['Content-Type']='application/json'
       return response
+    # If it is the user, the client requests the one time code from Google 
+    # (Client - Google)
     code = request.data
     try:
-        # Upgrade the authorization code into a credentials object
+        # Upgrade the authorization code into a credentials object which has the access
+        # token from the server (Server - Google)
         oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
@@ -54,14 +58,14 @@ def gconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
 
-    # Check that the access token is valid
+    # Check that the access token is valid (from the credentials sent by the server)
     access_token = credentials.access_token
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s'%access_token)
     h = httplib2.Http()
     result = json.loads(h.request(url, 'GET')[1])
     # If there was an error in the access token info, abort
     if result.get('error') is not None:
-        response = make_response(json.dumps(result.get('error')), 50)
+        response = make_response(json.dumps(result.get('error')), 500)
         response.headers['Content-Type'] = 'application/json'
     # Verify that the access token is used for the intended user
     gplus_id = credentials.id_token['sub']
@@ -76,6 +80,7 @@ def gconnect():
     stored_gplus_id = login_session.get('gplus_id')
     
     if stored_credentials is not None and gplus_id == stored_gplus_id:
+        print('ALREADY CONNECTED')
         response = make_response(json.dumps('Current user is already connected'), 200)
         response.headers['Content-Type'] = 'application/json'
 
@@ -93,6 +98,40 @@ def gconnect():
     login_session['picture'] = data["picture"]
     login_session['email'] = data["email"]
 
+    # Checking if logged-in user already exist in the DB
+    
+    # rows = session.query(User).count()
+    # print rows
+
+    # for x in session.query(User):
+    #     xx = session.query(User).filter_by(id = x.id).one()
+    #     session.delete(xx)
+    #     session.commit()
+    # rows = session.query(User).count()
+    # print rows
+
+    print('++' * 50)
+    user_id = getUserID(login_session['email'])
+    print(user_id)
+
+    if user_id:
+        print('LLENO')
+    else:
+        print('VACIO')
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+    print('++' * 50)
+
+    # rows = session.query(User).count()
+    # print rows
+
+    # for x in session.query(User):
+    #     xx = session.query(User).filter_by(id = x.id).one()
+    #     session.delete(xx)
+    #     session.commit()
+    # rows = session.query(User).count()
+    # print rows
+
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -104,10 +143,11 @@ def gconnect():
     print "done!"
     return output
 
+
 # User tools
 def createUser(login_session):
-    newUser = User(name = login_session['username'], email = login_session['email'],
-                  picture = login_session['picture'])
+    newUser = User(name = login_session['username'], email = login_session['email'], 
+      picture = login_session['picture'])
     session.add(newUser)
     session.commit()
     user = session.query(User).filter_by(email = login_session['email']).one()
@@ -119,7 +159,7 @@ def getUserInfo(user_id):
 
 def getUserID(email):
     try:
-      user = session.query(User).filter_by(id = user_id).one()
+      user = session.query(User).filter_by(email = login_session['email']).one()
       return user.id
     except:
       return None
@@ -186,7 +226,8 @@ def newRestaurant():
   if 'username' not in login_session:
       return redirect('/login')
   if request.method == 'POST':
-      newRestaurant = Restaurant(name = request.form['name'])
+      newRestaurant = Restaurant(name = request.form['name'], 
+        user_id = login_session['user_id'])
       session.add(newRestaurant)
       flash('New Restaurant %s Successfully Created' % newRestaurant.name)
       session.commit()
@@ -240,7 +281,12 @@ def newMenuItem(restaurant_id):
       return redirect('/login')
   restaurant = session.query(Restaurant).filter_by(id = restaurant_id).one()
   if request.method == 'POST':
-      newItem = MenuItem(name = request.form['name'], description = request.form['description'], price = request.form['price'], course = request.form['course'], restaurant_id = restaurant_id)
+      newItem = MenuItem(name = request.form['name'], 
+        description = request.form['description'], 
+        price = request.form['price'], 
+        course = request.form['course'], 
+        restaurant_id = restaurant_id,
+        user_id = login_session['user_id'])
       session.add(newItem)
       session.commit()
       flash('New Menu %s Item Successfully Created' % (newItem.name))
