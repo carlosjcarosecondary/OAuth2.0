@@ -102,7 +102,6 @@ def gconnect():
     login_session['email'] = data["email"]
 
     user_id = getUserID(login_session['email'])
-
     if not user_id:
         user_id = createUser(login_session)
     login_session['user_id'] = user_id
@@ -136,7 +135,7 @@ def createUser(login_session):
     return user.id
 
 def getUserInfo(user_id):
-    user = session.query(User).filter_by(email = login_session['email']).one()
+    user = session.query(User).filter_by(id = user_id).one()
     return user
 
 def getUserID(email):
@@ -200,7 +199,12 @@ def restaurantsJSON():
 @app.route('/restaurant/')
 def showRestaurants():
     restaurants = session.query(Restaurant).order_by(asc(Restaurant.name))
-    return render_template('restaurants.html', restaurants = restaurants)
+    # return render_template('restaurants.html', restaurants = restaurants)
+    try: 
+      if login_session['credentials']:
+        return render_template('restaurants.html', restaurants = restaurants)
+    except:
+      return render_template('publicrestaurants.html', restaurants = restaurants)
 
 #Create a new restaurant
 @app.route('/restaurant/new/', methods=['GET','POST'])
@@ -252,9 +256,14 @@ def deleteRestaurant(restaurant_id):
 def showMenu(restaurant_id):
     restaurant = session.query(Restaurant).filter_by(id = restaurant_id).one()
     items = session.query(MenuItem).filter_by(restaurant_id = restaurant_id).all()
-    return render_template('menu.html', items = items, restaurant = restaurant)
-     
-
+    creator = getUserInfo(restaurant.user_id)
+    try:
+        if login_session['credentials']:
+            return render_template('menu.html', items = items, restaurant = restaurant,
+              creator = creator)
+    except:
+        return render_template('publicmenu.html', items = items, restaurant = restaurant,
+          creator = creator)
 
 #Create a new menu item
 @app.route('/restaurant/<int:restaurant_id>/menu/new/',methods=['GET','POST'])
