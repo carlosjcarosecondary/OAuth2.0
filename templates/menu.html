@@ -8,8 +8,13 @@
 		<div class="col-md-11 col-md-offset-1 padding-none">
 			<h1>{{ restaurant.name }}
 			<figure class="creator">
+				{% if creator %}
+				<img src="{{ creator.picture}}">
+        		<figcaption>{{ creator.name }}</figcaption>
+				{% else %}
 				<img src="{{ url_for('static', filename='blank_user.gif') }}">
 				<figcaption>Menu creator's name goes here</figcaption>
+				{% endif %}
 			</figure>
 			</h1>
 
